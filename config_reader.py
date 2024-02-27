@@ -1,6 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import SecretStr
 
+PAYMENTS_TOKEN = '381764678:TEST:79061'
+
 
 class Settings(BaseSettings):
     bot_token: SecretStr
