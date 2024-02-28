@@ -80,20 +80,41 @@ async def cmd_start_book(message: Message, command: CommandObject):
 
 @dp.message(CommandStart())
 async def process_start_command(message: types.Message):
-    link = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
-    keyboard = InlineKeyboardBuilder()
+    message_buttons = [
+        [
+            types.InlineKeyboardButton(
+                text="Отправить сообщение по ссылке",
+                callback_data="message_link"
+            )
+        ],
+        [
+            types.InlineKeyboardButton(
+                text="Отправить сообщение, используя сообщение пользователя",
+                callback_data="message_username"
+            )
+        ]
+    ]
 
-    share_button = types.InlineKeyboardButton(
-        text="🔗 Поделиться",
-        switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
-    )
-
-    keyboard.add(share_button)
+    message_builder = types.InlineKeyboardMarkup(inline_keyboard=message_buttons)
 
     await message.answer(
-        f"❤️ Твоя ссылка для признаний:\n{link}\n\nЗакрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
-        reply_markup=keyboard.as_markup()
+        "❤️ Твоя ссылка для признаний:{link}Закрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
+        reply_markup=message_builder
     )
+    # link = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
+    # keyboard = InlineKeyboardBuilder()
+    #
+    # share_button = types.InlineKeyboardButton(
+    #     text="🔗 Поделиться",
+    #     switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
+    # )
+    #
+    # keyboard.add(share_button)
+    #
+    # await message.answer(
+    #     f"❤️ Твоя ссылка для признаний:\n{link}\n\nЗакрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
+    #     reply_markup=keyboard.as_markup()
+    # )
 
 
 @dp.message(F.text)
@@ -121,8 +142,27 @@ async def any_message(message: Message):
         )
 
         canWrite = False
+@dp.message(F.text)
+def link(value: str, message: types.Message):
+    value = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
+    return value
+@dp.callback_query(F.data.startswith("message_link"))
+async def message_link(callback: types.CallbackQuery):
+    value = link
+    keyboard = InlineKeyboardBuilder()
 
+    share_button = types.InlineKeyboardButton(
+        text="🔗 Поделиться",
+        switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{value}"
+    )
 
+    keyboard.add(share_button)
+
+    await callback.message.answer(
+
+        text=f"❤️ Твоя ссылка для признаний:\n{value}\n\nЗакрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
+        reply_markup=keyboard.as_markup(),
+    )
 @dp.callback_query(F.data.startswith("user_"))
 async def callbacks_num(callback: types.CallbackQuery):
     global user_id
