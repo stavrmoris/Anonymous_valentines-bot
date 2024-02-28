@@ -1,15 +1,18 @@
 import re
 import asyncio
 import logging
+import sqlite3
 
+from datetime import datetime
 from aiogram.enums import ContentType
-
 from config_reader import config, PAYMENTS_TOKEN
-from aiogram.types import Message, PreCheckoutQuery, successful_payment, inline_keyboard_markup
+from aiogram.types import Message
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.utils.deep_linking import create_start_link, decode_payload
+
+connection = sqlite3.connect('data.db')
+cursor = connection.cursor()
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=config.bot_token.get_secret_value())
@@ -20,14 +23,18 @@ user_id = 0
 canWrite = False
 
 
-@dp.message(Command("buy"))
+def date_integer(dt_time):
+    return 10000 * dt_time.year + 100 * dt_time.month + dt_time.day
+
+
+@dp.callback_query(F.data == "buy")
 async def buy(message: types.Message):
     if PAYMENTS_TOKEN.split(':')[1] == 'TEST':
-        await bot.send_message(message.chat.id, "Тестовый платеж!!!")
+        await message.answer("Тестовый платеж!!!")
 
-    await bot.send_invoice(message.chat.id,
+    await bot.send_invoice(message.from_user.id,
                            title="Подписка на бота",
-                           description="Активация подписки на бота на 1 месяц",
+                           description="🤖 Активация подписки на бота на 30 дней",
                            provider_token=PAYMENTS_TOKEN,
                            currency="rub",
                            photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
@@ -52,8 +59,13 @@ async def successful_payment(message: types.Message):
     for k, v in payment_info.items():
         print(f"{k} = {v}")
 
+    cursor.execute('INSERT INTO Users (user, date) VALUES (?, ?)',
+                   (f'{message.from_user.id}', date_integer(datetime.datetime.now() + datetime.timedelta(days=30))))
+    connection.commit()
+    connection.close()
+
     await bot.send_message(message.chat.id,
-                           f"Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно!!!")
+                           f"💵 Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно!!!")
 
 
 @dp.message(CommandStart(deep_link=True, magic=F.args.regexp(re.compile(r'user_(\d+)'))))
@@ -62,7 +74,7 @@ async def cmd_start_book(message: Message, command: CommandObject):
     global canWrite
 
     user_id = command.args.split("_")[1]
-    await message.answer(f"Напишите сообщение {user_id}:")
+    await message.answer(f"✉️ Напишите сообщение:")
     canWrite = True
 
 
@@ -72,7 +84,7 @@ async def process_start_command(message: types.Message):
     keyboard = InlineKeyboardBuilder()
 
     share_button = types.InlineKeyboardButton(
-        text="Поделиться",
+        text="🔗 Поделиться",
         switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
     )
 
@@ -92,11 +104,11 @@ async def any_message(message: Message):
         await message.answer("Ваше сообщение успешно отправлено!")
         buttons = [
             [types.InlineKeyboardButton(
-                text="Анонимно ответить",
+                text="🥸 Анонимно ответить",
                 callback_data=f"user_{str(message.from_user.id)}"
             )],
             [types.InlineKeyboardButton(
-                text="Узнать отправителя",
+                text="🥷 Узнать отправителя",
                 callback_data="premium"
             )]
         ]
@@ -118,12 +130,37 @@ async def callbacks_num(callback: types.CallbackQuery):
 
     user_id = callback.data.split("_")[1]
     canWrite = True
-    await callback.message.answer(f"Напишите сообщение {user_id}:")
+    await callback.message.answer(f"✉️ Напишите сообщение {user_id}:")
     await callback.answer()
+
 
 @dp.callback_query(F.data == "premium")
 async def send_random_value(callback: types.CallbackQuery):
-    await callback.message.answer(str("Для того чтобы узнать отправителя, необходимо оформить премиум"))
+    global user_id
+    cursor.execute("SELECT * FROM users WHERE user = ?", (user_id,))
+    results = cursor.fetchone()
+
+    print(user_id)
+    print(results)
+    print(results[1])
+
+    if (results and user_id in results) and (results[1] and datetime.strptime(str(results[1]), '%Y%m%d') >= datetime.now()):
+        user_name = "👱 Вам написал этот пользователь."
+        mention = "[" + user_name + "](tg://user?id=" + str(user_id) + ")"
+        await bot.send_message(callback.from_user.id, mention, parse_mode="Markdown")
+    else:
+        builder = InlineKeyboardBuilder()
+        builder.add(types.InlineKeyboardButton(
+            text="💵 Купить",
+            callback_data="buy")
+        )
+
+        await callback.message.answer(
+            f"💁 Чтобы узнать отправителя - купите 30 дневную подписку на бота всего за 169 руб.",
+            reply_markup=builder.as_markup()
+        )
+    await callback.answer()
+
 
 async def main():
     await dp.start_polling(bot)
