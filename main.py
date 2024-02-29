@@ -3,23 +3,30 @@ import asyncio
 import logging
 import sqlite3
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram.enums import ContentType
 from config_reader import config, PAYMENTS_TOKEN
 from aiogram.types import Message
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.client.session.aiohttp import AiohttpSession
+from telethon import TelegramClient
+from telethon.tl.functions.users import GetFullUserRequest
 
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
 
+//session = AiohttpSession(proxy='http://proxy.server:3128') # в proxy указан прокси сервер pythonanywhere, он нужен для подключения
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=config.bot_token.get_secret_value())
+bot = Bot(token=config.bot_token.get_secret_value()''', session=session''')
 dp = Dispatcher()
 
 PRICE = types.LabeledPrice(label="Подписка на 1 месяц", amount=169 * 100)  # в копейках (руб)
 user_id = 0
+user2 = 0
+name = "неопределенно"
+user_only = False
 canWrite = False
 
 
@@ -55,24 +62,29 @@ async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery):
 @dp.message(F.content_type == ContentType.SUCCESSFUL_PAYMENT)
 async def successful_payment(message: types.Message):
     print("SUCCESSFUL PAYMENT:")
+
+    print(f"ID купившего премиум: {message.from_user.id}")
+    cursor.execute('INSERT INTO Users (user, date) VALUES (?, ?)',
+                   (f'{message.from_user.id}', date_integer(datetime.now() + timedelta(days=30))))
+    connection.commit()
+
     payment_info = message.successful_payment.to_python()
     for k, v in payment_info.items():
         print(f"{k} = {v}")
 
-    cursor.execute('INSERT INTO Users (user, date) VALUES (?, ?)',
-                   (f'{message.from_user.id}', date_integer(datetime.datetime.now() + datetime.timedelta(days=30))))
-    connection.commit()
-    connection.close()
-
     await bot.send_message(message.chat.id,
-                           f"💵 Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно!!!")
+                           f"💵 Платеж на сумму {message.successful_payment.total_amount // 100} {message.successful_payment.currency} прошел успешно! Спасибо, что пользуетесь нашим сервисом 🥰 !!!")
 
 
 @dp.message(CommandStart(deep_link=True, magic=F.args.regexp(re.compile(r'user_(\d+)'))))
 async def cmd_start_book(message: Message, command: CommandObject):
     global user_id
     global canWrite
+    global user2
+    global name
 
+    name = message.from_user.username
+    user2 = message.from_user.id
     user_id = command.args.split("_")[1]
     await message.answer(f"✉️ Напишите сообщение:")
     canWrite = True
@@ -80,16 +92,18 @@ async def cmd_start_book(message: Message, command: CommandObject):
 
 @dp.message(CommandStart())
 async def process_start_command(message: types.Message):
+    link = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
+
     message_buttons = [
         [
             types.InlineKeyboardButton(
-                text="Отправить сообщение по ссылке",
-                callback_data="message_link"
+                 text="🔗 Поделиться ссылкой",
+                 switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
             )
         ],
         [
             types.InlineKeyboardButton(
-                text="Отправить сообщение, используя сообщение пользователя",
+                text="Анонимно написать пользователю",
                 callback_data="message_username"
             )
         ]
@@ -98,30 +112,28 @@ async def process_start_command(message: types.Message):
     message_builder = types.InlineKeyboardMarkup(inline_keyboard=message_buttons)
 
     await message.answer(
-        "❤️ Твоя ссылка для признаний:{link}Закрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
+        f"❤️ Твоя ссылка для признаний: {link}\n\n📌 Закрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
         reply_markup=message_builder
     )
-    # link = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
-    # keyboard = InlineKeyboardBuilder()
-    #
-    # share_button = types.InlineKeyboardButton(
-    #     text="🔗 Поделиться",
-    #     switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
-    # )
-    #
-    # keyboard.add(share_button)
-    #
-    # await message.answer(
-    #     f"❤️ Твоя ссылка для признаний:\n{link}\n\nЗакрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
-    #     reply_markup=keyboard.as_markup()
-    # )
 
 
 @dp.message(F.text)
 async def any_message(message: Message):
     global canWrite
+    global user_only
+    global user_id
 
-    if canWrite:
+    if user_only:
+        if message.forward_from is not None:
+            user_id = message.forward_from.id
+            print("user reply id: ", message.forward_from.id)
+            await message.answer("🎉 Мы приняли никнейм! Теперь напишите сообщение.")
+            canWrite = True
+        else:
+            await message.answer(f"🤖 Простите, но пользователь заблокировал возможность распознавания ника по сообщениям.")
+        user_only = False
+
+    elif canWrite:
         await message.answer("Ваше сообщение успешно отправлено!")
         buttons = [
             [types.InlineKeyboardButton(
@@ -142,52 +154,50 @@ async def any_message(message: Message):
         )
 
         canWrite = False
-@dp.message(F.text)
-def link(value: str, message: types.Message):
-    value = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
-    return value
-@dp.callback_query(F.data.startswith("message_link"))
+
+
+@dp.callback_query(F.data == "message_username")
 async def message_link(callback: types.CallbackQuery):
-    value = link
-    keyboard = InlineKeyboardBuilder()
+    global user_only
 
-    share_button = types.InlineKeyboardButton(
-        text="🔗 Поделиться",
-        switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{value}"
-    )
+    user_only = True
+    await callback.message.answer(text=f"👱 Отправьте любое сообщение пользователя, которому хотите написать.\nЛибо отправьте ник пользователя. Например: @people")
+    await callback.answer()
 
-    keyboard.add(share_button)
 
-    await callback.message.answer(
-
-        text=f"❤️ Твоя ссылка для признаний:\n{value}\n\nЗакрепи эту ссылку в профиле или поделись с друзьями, чтобы получать анонимные валентинки!",
-        reply_markup=keyboard.as_markup(),
-    )
 @dp.callback_query(F.data.startswith("user_"))
 async def callbacks_num(callback: types.CallbackQuery):
     global user_id
+    global user2
     global canWrite
+    global name
 
+    name = callback.from_user.username
     user_id = callback.data.split("_")[1]
+    user2 = callback.from_user.id
     canWrite = True
-    await callback.message.answer(f"✉️ Напишите сообщение {user_id}:")
+    await callback.message.answer(f"✉️ Напишите ваше сообщение:")
     await callback.answer()
 
 
 @dp.callback_query(F.data == "premium")
 async def send_random_value(callback: types.CallbackQuery):
     global user_id
+    global name
+    global user2
+
     cursor.execute("SELECT * FROM users WHERE user = ?", (user_id,))
     results = cursor.fetchone()
 
-    print(user_id)
+    print("user_id", user_id)
+    print("user2", user2)
+    print(name)
     print(results)
-    print(results[1])
 
     if (results and user_id in results) and (results[1] and datetime.strptime(str(results[1]), '%Y%m%d') >= datetime.now()):
-        user_name = "👱 Вам написал этот пользователь."
-        mention = "[" + user_name + "](tg://user?id=" + str(user_id) + ")"
-        await bot.send_message(callback.from_user.id, mention, parse_mode="Markdown")
+        user_name = f"👱 Кликните, чтобы узнать, кто вам написал.\n\n🎇 Это был пользователь с id: {user2} и ником: {name}\n\n\n"
+        mention = "[" + user_name + "](t.me/" + str(name) + ")"
+        await callback.message.answer(mention, parse_mode="Markdown")
     else:
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(
@@ -196,7 +206,7 @@ async def send_random_value(callback: types.CallbackQuery):
         )
 
         await callback.message.answer(
-            f"💁 Чтобы узнать отправителя - купите 30 дневную подписку на бота всего за 169 руб.",
+            f"💁 Чтобы узнать отправителя - купите 30 дневную подписку на бота, всего за 169 руб.",
             reply_markup=builder.as_markup()
         )
     await callback.answer()
