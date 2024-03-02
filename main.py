@@ -17,9 +17,9 @@ from telethon.tl.functions.users import GetFullUserRequest
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
 
-//session = AiohttpSession(proxy='http://proxy.server:3128') # в proxy указан прокси сервер pythonanywhere, он нужен для подключения
+
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=config.bot_token.get_secret_value()''', session=session''')
+bot = Bot(token=config.bot_token.get_secret_value())
 dp = Dispatcher()
 
 PRICE = types.LabeledPrice(label="Подписка на 1 месяц", amount=169 * 100)  # в копейках (руб)
@@ -86,7 +86,7 @@ async def cmd_start_book(message: Message, command: CommandObject):
     name = message.from_user.username
     user2 = message.from_user.id
     user_id = command.args.split("_")[1]
-    await message.answer(f"✉️ Напишите сообщение:")
+    await message.answer(f"✉️ Напишите ваше сообщение:")
     canWrite = True
 
 
@@ -101,6 +101,7 @@ async def process_start_command(message: types.Message):
                  switch_inline_query=f"\n💌 Напишите мне анонимную валентинку:\n\n{link}"
             )
         ],
+
         [
             types.InlineKeyboardButton(
                 text="Анонимно написать пользователю",
@@ -124,14 +125,16 @@ async def any_message(message: Message):
     global user_id
 
     if user_only:
+
         if message.forward_from is not None:
             user_id = message.forward_from.id
             print("user reply id: ", message.forward_from.id)
             await message.answer("🎉 Мы приняли никнейм! Теперь напишите сообщение.")
             canWrite = True
+            user_only = False
         else:
             await message.answer(f"🤖 Простите, но пользователь заблокировал возможность распознавания ника по сообщениям.")
-        user_only = False
+
 
     elif canWrite:
         await message.answer("Ваше сообщение успешно отправлено!")
@@ -161,7 +164,7 @@ async def message_link(callback: types.CallbackQuery):
     global user_only
 
     user_only = True
-    await callback.message.answer(text=f"👱 Отправьте любое сообщение пользователя, которому хотите написать.\nЛибо отправьте ник пользователя. Например: @people")
+    await callback.message.edit_text(text=f"👱 Отправьте любое сообщение пользователя, которому хотите написать.\nЛибо отправьте ник пользователя. Например: @people")
     await callback.answer()
 
 
@@ -176,7 +179,8 @@ async def callbacks_num(callback: types.CallbackQuery):
     user_id = callback.data.split("_")[1]
     user2 = callback.from_user.id
     canWrite = True
-    await callback.message.answer(f"✉️ Напишите ваше сообщение:")
+    await callback.message.edit_text("✉️ Напишите ваше сообщение:")
+
     await callback.answer()
 
 
