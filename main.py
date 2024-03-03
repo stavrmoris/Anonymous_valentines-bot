@@ -268,18 +268,19 @@ async def send_random_value(callback: types.CallbackQuery):
     global name
     global user2
 
-    cursor.execute("SELECT * FROM users WHERE user = ?", (user_id,))
+    cursor.execute("SELECT * FROM users WHERE user = ?", (callback.from_user.id,))
     results = cursor.fetchone()
 
-    print("user_id", user_id)
+    print("user_id", callback.from_user.id)
     print("user2", user2)
     print(name)
     print(results)
 
-    if (results and user_id in results) and (results[1] and datetime.strptime(str(results[1]), '%Y%m%d') >= datetime.now()):
-        user_name = f"👱 Кликните, чтобы узнать, кто вам написал.\n\n🎇 Это был пользователь с id: {user2} и ником: {name}\n\n\n"
+    if results and (results[1] and datetime.strptime(str(results[1]), '%Y%m%d') >= datetime.now()):
+        user_name = f"👱 Кликните, чтобы узнать, кто вам написал."
         mention = "[" + user_name + "](t.me/" + str(name) + ")"
-        await callback.message.answer(mention, parse_mode="Markdown")
+        await callback.message.edit_text(mention, parse_mode="Markdown")
+        await callback.message.answer(f"🎇 Это был пользователь с id: {user2} и ником: @{name}", parse_mode="Markdown")
     else:
         builder = InlineKeyboardBuilder()
         builder.add(types.InlineKeyboardButton(
