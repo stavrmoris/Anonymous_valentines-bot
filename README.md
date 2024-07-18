@@ -14,7 +14,7 @@ Anonymous Valentines Bot is a telegram bot that allows users to anonymously send
 
 ## 📜 Description
 
-This project provides a Telegram bot that allows users to send anonymous valentines. The bot supports basic features such as sending messages and managing users.
+This code implements a Telegram bot that allows users to send anonymous messages and subscribe to premium services. The main functions include purchasing a subscription, sending anonymous messages, and checking a user's subscription status. The bot uses the aiogram library to interact with the Telegram API and an SQLite database to store user data and their subscriptions.
 
 ## 🔧 Installation
 
