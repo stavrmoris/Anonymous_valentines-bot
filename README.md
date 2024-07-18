@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.x-blue.svg)
 ![Telegram](https://img.shields.io/badge/Telegram-Bot-blue.svg)
-![aiogram](https://img.shields.io/badge/aiogram-2.x-green.svg)
+![aiogram](https://img.shields.io/badge/aiogram-3.x-green.svg)
 ![Stars](https://img.shields.io/github/stars/stavrmoris/Anonymous_valentines-bot)
 
 Anonymous Valentines Bot is a telegram bot that allows users to anonymously send valentines to each other.
