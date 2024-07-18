@@ -39,9 +39,19 @@ This code implements a Telegram bot that allows users to send anonymous messages
     pip install -r requirements.txt
     ```
 
-4. **Create a configuration file `.env` and add your data:**
+4. **Open a configuration file `.env` and add your data:**
     ```
     TELEGRAM_TOKEN=your_telegram_bot_token
+    ```
+
+5. **Open a configuration file `config_reader.py` and add your data:**
+    ```
+    PAYMENTS_TOKEN = '12345:your_payments_token:54321'
+    ```
+
+5. **Open a main bot script `bot.py` and add your data:**
+    ```
+    bot_name = 'your bot name'
     ```
 
 ## 🚀 Usage
