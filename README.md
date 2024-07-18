@@ -5,18 +5,18 @@
 
 Anonymous Valentines Bot is a telegram bot that allows users to anonymously send valentines to each other.
 
-## Table of Contents
+## 📚 Table of Contents
 
 - [Description](#description)
 - [Installation](#installation)
 - [Usage](#usage)
 - [License](#license)
 
-## Description
+## 📜 Description
 
 This project provides a Telegram bot that allows users to send anonymous valentines. The bot supports basic features such as sending messages and managing users.
 
-## Installation
+## 🔧 Installation
 
 1. **Clone the repository:**
     ```bash
@@ -40,7 +40,7 @@ This project provides a Telegram bot that allows users to send anonymous valenti
     TELEGRAM_TOKEN=your_telegram_bot_token
     ```
 
-## Usage
+## 🚀 Usage
 
 1. **Run the bot:**
     ```bash
@@ -53,6 +53,6 @@ This project provides a Telegram bot that allows users to send anonymous valenti
    - Follow the instructions to send anonymous valentines.
   
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
