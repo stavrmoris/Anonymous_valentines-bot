@@ -12,6 +12,9 @@ from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.client.session.aiohttp import AiohttpSession
 
+# Your bot name
+bot_name = 'sicret_msgBot'
+
 # Database connections
 connection = sqlite3.connect('data.db')
 cursor = connection.cursor()
@@ -112,7 +115,7 @@ async def process_start_command(message: types.Message):
                    (f'{message.from_user.id}', message.from_user.username))
         connection2.commit()
 
-    link = f"t.me/stavrmoris_testbot?start=user_{str(message.from_user.id)}"
+    link = f"t.me/{bot_name}?start=user_{str(message.from_user.id)}"
 
     builder = ReplyKeyboardBuilder()
 
