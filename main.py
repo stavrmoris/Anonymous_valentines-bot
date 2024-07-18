@@ -13,7 +13,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from aiogram.client.session.aiohttp import AiohttpSession
 
 # Your bot name
-bot_name = 'sicret_msgBot'
+bot_name = 'your bot name'
 
 # Database connections
 connection = sqlite3.connect('data.db')
