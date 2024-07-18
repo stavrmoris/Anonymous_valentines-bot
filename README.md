@@ -11,10 +11,10 @@ Anonymous Valentines Bot is a telegram bot that allows users to anonymously send
 
 ## 📚 Table of Contents
 
-- [Description](#description)
-- [Installation](#installation)
-- [Usage](#usage)
-- [License](#license)
+- [Description](#-description)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [License](#-license)
 
 ## 📜 Description
 
